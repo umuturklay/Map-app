@@ -1,89 +1,70 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using BaşarsoftProje.Data;
-using Microsoft.EntityFrameworkCore;
-using System;
+using System.Threading.Tasks;
+using BaşarsoftProje.Models;
+using BaşarsoftProje.Repositories;
 
 namespace BaşarsoftProje.Services
 {
     public class PointService : IPointService
     {
-        private readonly PointContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public PointService(PointContext context)
+        public PointService(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
-        public List<Point> GetAll()
+        public async Task<List<Point>> GetAll()
         {
-            return _context.Points.ToList();
+            return await _unitOfWork.Points.GetAllAsync();
         }
 
-        public Point Add(Point point)
+        public async Task<Point> Add(Point point)
         {
             try
             {
-                _context.Points.Add(point);
-                _context.SaveChanges();
-                return point;
+                var addedPoint = await _unitOfWork.Points.AddAsync(point);
+                await _unitOfWork.CommitAsync();
+                return addedPoint;
             }
-            catch (Exception ex)
+            catch
             {
                 return null;
             }
         }
 
-        public Point GetById(int id)
+        public async Task<Point> GetById(int id)
         {
-            try
-            {
-                return _context.Points.Find(id);
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
+            return await _unitOfWork.Points.GetByIdAsync(id);
         }
 
-        public string Delete(int id)
+        public async Task<string> Delete(int id)
         {
-            try
+            var result = await _unitOfWork.Points.DeleteAsync(id);
+            if (!result)
             {
-                var point = _context.Points.Find(id);
-                if (point == null)
-                {
-                    return "Point not found";
-                }
-                _context.Points.Remove(point);
-                _context.SaveChanges();
-                return "Point deleted successfully";
+                return "Point not found";
             }
-            catch (Exception ex)
-            {
-                return $"Error: {ex.Message}";
-            }
+
+            await _unitOfWork.CommitAsync();
+            return "Point deleted successfully";
         }
 
-        public string Update(int id, Point newPoint)
+        public async Task<string> Update(int id, Point newPoint)
         {
-            try
+            var existingPoint = await _unitOfWork.Points.GetByIdAsync(id);
+            if (existingPoint == null)
             {
-                var point = _context.Points.Find(id);
-                if (point == null)
-                {
-                    return "Point not found";
-                }
-                point.X = newPoint.X;
-                point.Y = newPoint.Y;
-                point.Name = newPoint.Name;
-                _context.SaveChanges();
-                return "Point updated successfully";
+                return "Point not found";
             }
-            catch (Exception ex)
-            {
-                return $"Error: {ex.Message}";
-            }
+
+            existingPoint.X = newPoint.X;
+            existingPoint.Y = newPoint.Y;
+            existingPoint.Name = newPoint.Name;
+
+            await _unitOfWork.Points.UpdateAsync(existingPoint);
+            await _unitOfWork.CommitAsync();
+            return "Point updated successfully";
         }
     }
 }

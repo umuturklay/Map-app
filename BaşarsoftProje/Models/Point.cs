@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace BaşarsoftProje
+namespace BaşarsoftProje.Models
 {
     public class Point
     {

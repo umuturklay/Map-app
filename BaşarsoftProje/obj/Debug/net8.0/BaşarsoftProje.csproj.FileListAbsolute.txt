@@ -103,3 +103,4 @@ C:\Users\sakay\source\repos\BaşarsoftProje\BaşarsoftProje\obj\Debug\net8.0\ref
 C:\Users\sakay\source\repos\BaşarsoftProje\BaşarsoftProje\obj\Debug\net8.0\BaşarsoftProje.pdb
 C:\Users\sakay\source\repos\BaşarsoftProje\BaşarsoftProje\obj\Debug\net8.0\BaşarsoftProje.genruntimeconfig.cache
 C:\Users\sakay\source\repos\BaşarsoftProje\BaşarsoftProje\obj\Debug\net8.0\ref\BaşarsoftProje.dll
+C:\Users\sakay\source\repos\BaşarsoftProje\BaşarsoftProje\obj\Debug\net8.0\BaşarsoftProje.sourcelink.json

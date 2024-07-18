@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using BaşarsoftProje.Services;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using BaşarsoftProje.Models;
 
 namespace BaşarsoftProje.Controllers
 {
@@ -16,20 +18,21 @@ namespace BaşarsoftProje.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<Point>> GetAll()
+        public async Task<ActionResult<List<Point>>> GetAll()
         {
-            return Ok(_pointService.GetAll());
+            var points = await _pointService.GetAll();
+            return Ok(points);
         }
 
         [HttpPost]
-        public ActionResult<Point> Add([FromBody] Point point)
+        public async Task<ActionResult<Point>> Add([FromBody] Point point)
         {
             if (point == null)
             {
                 return BadRequest("Point is null.");
             }
 
-            var result = _pointService.Add(point);
+            var result = await _pointService.Add(point);
             if (result == null)
             {
                 return StatusCode(500, "An error occurred while adding the point.");
@@ -39,9 +42,9 @@ namespace BaşarsoftProje.Controllers
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Point> GetById(int id)
+        public async Task<ActionResult<Point>> GetById(int id)
         {
-            var point = _pointService.GetById(id);
+            var point = await _pointService.GetById(id);
             if (point == null)
             {
                 return NotFound();
@@ -50,9 +53,9 @@ namespace BaşarsoftProje.Controllers
         }
 
         [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            var result = _pointService.Delete(id);
+            var result = await _pointService.Delete(id);
             if (result.StartsWith("Error"))
             {
                 return StatusCode(500, result);
@@ -65,14 +68,14 @@ namespace BaşarsoftProje.Controllers
         }
 
         [HttpPut("{id}")]
-        public ActionResult Update(int id, [FromBody] Point newPoint)
+        public async Task<ActionResult> Update(int id, [FromBody] Point newPoint)
         {
             if (newPoint == null)
             {
                 return BadRequest("New Point is null.");
             }
 
-            var result = _pointService.Update(id, newPoint);
+            var result = await _pointService.Update(id, newPoint);
             if (result.StartsWith("Error"))
             {
                 return StatusCode(500, result);

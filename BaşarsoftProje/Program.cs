@@ -4,26 +4,23 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using BaþarsoftProje.Services;
 using BaþarsoftProje.Data;
+using BaþarsoftProje.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-// Register the PointService
+// Register services
 builder.Services.AddScoped<IPointService, PointService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Configure the PostgreSQL database context
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<PointContext>(options =>
     options.UseNpgsql(connectionString));
-
-// Add Swagger services
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "API Title", Version = "v1" });
-});
 
 var app = builder.Build();
 
@@ -31,16 +28,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Title v1");
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

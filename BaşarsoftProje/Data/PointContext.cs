@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BaşarsoftProje.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 
 namespace BaşarsoftProje.Data
