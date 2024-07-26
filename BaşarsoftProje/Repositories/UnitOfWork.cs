@@ -1,6 +1,7 @@
 ﻿using BaşarsoftProje.Data;
-using System.Threading.Tasks;
 using BaşarsoftProje.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace BaşarsoftProje.Repositories
 {

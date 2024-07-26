@@ -2724,9 +2724,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\BaşarsoftProje.csproj",
-      "projectName": "BaşarsoftProje",
-      "projectPath": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\BaşarsoftProje.csproj",
+      "projectUniqueName": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\GeolocationAPI.csproj",
+      "projectName": "GeolocationAPI",
+      "projectPath": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\GeolocationAPI.csproj",
       "packagesPath": "C:\\Users\\sakay\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\obj\\",
       "projectStyle": "PackageReference",
@@ -2807,7 +2807,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.302/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.303/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
