@@ -2,6 +2,7 @@
 using BaşarsoftProje.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BaşarsoftProje.Migrations
 {
     [DbContext(typeof(PointContext))]
-    partial class PointContextModelSnapshot : ModelSnapshot
+    [Migration("20240729183946_UpdatePointCoordinatesToDouble")]
+    partial class UpdatePointCoordinatesToDouble
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

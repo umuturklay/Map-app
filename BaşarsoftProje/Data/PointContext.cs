@@ -1,6 +1,5 @@
 ﻿using BaşarsoftProje.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 
 namespace BaşarsoftProje.Data
 {
@@ -9,6 +8,16 @@ namespace BaşarsoftProje.Data
         public PointContext(DbContextOptions<PointContext> options) : base(options) { }
 
         public DbSet<Point> Points { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Point>()
+                .Property(p => p.X)
+                .HasColumnType("double precision");
+
+            modelBuilder.Entity<Point>()
+                .Property(p => p.Y)
+                .HasColumnType("double precision");
+        }
     }
 }
-

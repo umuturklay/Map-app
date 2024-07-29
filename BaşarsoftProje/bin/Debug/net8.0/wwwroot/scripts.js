@@ -14,9 +14,12 @@ var map = new ol.Map({
     })
 });
 
+var drawInteraction;
+var vectorSource = map.getLayers().item(1).getSource();
+
 function addMarker(coordinate, name) {
     var marker = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat(coordinate)),
+        geometry: new ol.geom.Point(coordinate),
         name: name
     });
 
@@ -28,99 +31,80 @@ function addMarker(coordinate, name) {
         })
     }));
 
-    var vectorSource = map.getLayers().item(1).getSource();
     vectorSource.addFeature(marker);
 }
 
-fetch(`https://localhost:7047/api/point`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        data.forEach(point => {
-            addMarker([point.x, point.y], point.name);
-        });
-    })
-    .catch(error => console.error('Error:', error));
-
-var isAddingPoint = false;
-var currentCoordinate = null;
-
-// Modal elements
-var modal = document.getElementById('addPointModal');
-var span = document.getElementsByClassName('close')[0];
-var submitPointBtn = document.getElementById('submitPoint');
-var pointNameInput = document.getElementById('pointName');
-
-// Open modal on "Add Point" button click
 document.getElementById('addPointBtn').addEventListener('click', function () {
-    isAddingPoint = true;
-    document.getElementById('map').classList.add('cursor-crosshair');
-});
-
-// Handle map click event
-map.on('click', function (event) {
-    if (isAddingPoint) {
-        currentCoordinate = event.coordinate;
-        modal.style.display = 'block'; // Show the modal
+    if (drawInteraction) {
+        map.removeInteraction(drawInteraction);
     }
-});
 
-// Close modal when user clicks on <span> (x)
-span.onclick = function () {
-    modal.style.display = 'none';
-    isAddingPoint = false;
-    document.getElementById('map').classList.remove('cursor-crosshair');
-};
+    drawInteraction = new ol.interaction.Draw({
+        source: vectorSource,
+        type: 'Point'
+    });
 
-// Close modal when user clicks outside of the modal
-window.onclick = function (event) {
-    if (event.target === modal) {
-        modal.style.display = 'none';
-        isAddingPoint = false;
-        document.getElementById('map').classList.remove('cursor-crosshair');
-    }
-};
+    map.addInteraction(drawInteraction);
 
-// Handle submit button click
-submitPointBtn.addEventListener('click', function () {
-    var name = pointNameInput.value.trim();
-    if (name) {
-        var lonLat = ol.proj.toLonLat(currentCoordinate);
-        fetch(`https://localhost:7047/api/point`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                x: Math.round(lonLat[0]),
-                y: Math.round(lonLat[1]),
-                name: name
-            })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw err; });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Success:', data);
-                addMarker(lonLat, name);
-                modal.style.display = 'none';
-                isAddingPoint = false;
-                document.getElementById('map').classList.remove('cursor-crosshair');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to add point. Check console for details.');
-            });
-    } else {
-        alert('Please enter a name for the point.');
-    }
+    drawInteraction.on('drawend', function (event) {
+        var coordinate = event.feature.getGeometry().getCoordinates();
+        var lonLat = ol.proj.toLonLat(coordinate);
+
+        jsPanel.create({
+            theme: 'primary',
+            headerTitle: 'Add Point',
+            position: 'center',
+            contentSize: '300 200',
+            content: `
+                <form id="pointForm">
+                    <label for="x">X:</label>
+                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}" readonly><br><br>
+                    <label for="y">Y:</label>
+                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}" readonly><br><br>
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" required><br><br>
+                    <button type="submit">Save</button>
+                </form>
+            `,
+            callback: function (panel) {
+                document.getElementById('pointForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var name = document.getElementById('name').value.trim();
+                    if (name) {
+                        fetch('https://localhost:7047/api/point', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                x: parseFloat(lonLat[0].toFixed(6)),
+                                y: parseFloat(lonLat[1].toFixed(6)),
+                                name: name
+                            })
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return response.json().then(err => { throw err; });
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                console.log('Success:', data);
+                                addMarker(coordinate, name);
+                                panel.close();
+                                map.removeInteraction(drawInteraction);
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Failed to add point. Check console for details.');
+                            });
+                    } else {
+                        alert('Please enter a name for the point.');
+                    }
+                });
+            }
+        });
+    });
 });
 
 document.getElementById('queryBtn').addEventListener('click', function () {
@@ -128,7 +112,7 @@ document.getElementById('queryBtn').addEventListener('click', function () {
         .then(response => response.json())
         .then(data => {
             data.forEach(point => {
-                addMarker([point.x, point.y], point.name);
+                addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name);
             });
         })
         .catch(error => console.error('Error:', error));
