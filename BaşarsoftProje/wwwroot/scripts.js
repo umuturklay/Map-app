@@ -32,8 +32,13 @@ function addMarker(coordinate, name) {
     vectorSource.addFeature(marker);
 }
 
-fetch('/api/point')
-    .then(response => response.json())
+fetch(`https://localhost:7047/api/point`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         data.forEach(point => {
             addMarker([point.x, point.y], point.name);
@@ -45,26 +50,34 @@ document.getElementById('addPointBtn').addEventListener('click', function () {
     var coordinate = map.getView().getCenter();
     var lonLat = ol.proj.toLonLat(coordinate);
     var name = 'New Point';
-    addMarker(lonLat, name);
-
-    fetch('/api/point', {
+    fetch(`https://localhost:7047/api/point`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            x: lonLat[0],
-            y: lonLat[1],
+            x: Math.round(lonLat[0]),
+            y: Math.round(lonLat[1]),
             name: name
         })
     })
-        .then(response => response.json())
-        .then(data => console.log(data))
-        .catch(error => console.error('Error:', error));
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            addMarker(lonLat, name);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to add point. Check console for details.');
+        });
 });
-
 document.getElementById('queryBtn').addEventListener('click', function () {
-    fetch('/api/point')
+    fetch('https://localhost:7047/api/point')
         .then(response => response.json())
         .then(data => {
             data.forEach(point => {

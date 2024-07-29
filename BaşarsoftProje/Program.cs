@@ -27,6 +27,18 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<PointContext>(options =>
     options.UseNpgsql(connectionString));
 
+// Add CORS service
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
+// Build the application
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -41,11 +53,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Use CORS middleware
+app.UseCors("AllowAll");
+
 // Serve static files and default files
 app.UseStaticFiles();
 app.UseDefaultFiles();
 
 app.UseRouting();
+
 app.UseAuthorization();
 
 app.MapControllers();
