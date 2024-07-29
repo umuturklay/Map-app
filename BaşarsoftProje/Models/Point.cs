@@ -8,10 +8,10 @@ namespace BaşarsoftProje.Models
         public int Id { get; set; }
 
         [Required]
-        public int X { get; set; }
+        public double X { get; set; }
 
         [Required]
-        public int Y { get; set; }
+        public double Y { get; set; }
 
         [Required]
         public string Name { get; set; }
