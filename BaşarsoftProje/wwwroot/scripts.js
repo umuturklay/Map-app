@@ -46,36 +46,83 @@ fetch(`https://localhost:7047/api/point`)
     })
     .catch(error => console.error('Error:', error));
 
+var isAddingPoint = false;
+var currentCoordinate = null;
+
+// Modal elements
+var modal = document.getElementById('addPointModal');
+var span = document.getElementsByClassName('close')[0];
+var submitPointBtn = document.getElementById('submitPoint');
+var pointNameInput = document.getElementById('pointName');
+
+// Open modal on "Add Point" button click
 document.getElementById('addPointBtn').addEventListener('click', function () {
-    var coordinate = map.getView().getCenter();
-    var lonLat = ol.proj.toLonLat(coordinate);
-    var name = 'New Point';
-    fetch(`https://localhost:7047/api/point`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            x: Math.round(lonLat[0]),
-            y: Math.round(lonLat[1]),
-            name: name
-        })
-    })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Success:', data);
-            addMarker(lonLat, name);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to add point. Check console for details.');
-        });
+    isAddingPoint = true;
+    document.getElementById('map').classList.add('cursor-crosshair');
 });
+
+// Handle map click event
+map.on('click', function (event) {
+    if (isAddingPoint) {
+        currentCoordinate = event.coordinate;
+        modal.style.display = 'block'; // Show the modal
+    }
+});
+
+// Close modal when user clicks on <span> (x)
+span.onclick = function () {
+    modal.style.display = 'none';
+    isAddingPoint = false;
+    document.getElementById('map').classList.remove('cursor-crosshair');
+};
+
+// Close modal when user clicks outside of the modal
+window.onclick = function (event) {
+    if (event.target === modal) {
+        modal.style.display = 'none';
+        isAddingPoint = false;
+        document.getElementById('map').classList.remove('cursor-crosshair');
+    }
+};
+
+// Handle submit button click
+submitPointBtn.addEventListener('click', function () {
+    var name = pointNameInput.value.trim();
+    if (name) {
+        var lonLat = ol.proj.toLonLat(currentCoordinate);
+        fetch(`https://localhost:7047/api/point`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                x: Math.round(lonLat[0]),
+                y: Math.round(lonLat[1]),
+                name: name
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Success:', data);
+                addMarker(lonLat, name);
+                modal.style.display = 'none';
+                isAddingPoint = false;
+                document.getElementById('map').classList.remove('cursor-crosshair');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add point. Check console for details.');
+            });
+    } else {
+        alert('Please enter a name for the point.');
+    }
+});
+
 document.getElementById('queryBtn').addEventListener('click', function () {
     fetch('https://localhost:7047/api/point')
         .then(response => response.json())

@@ -15,10 +15,20 @@
             <button id="queryBtn">Query</button>
             <select id="geometryType">
                 <option value="Point">Point</option>
-                
+
             </select>
         </div>
     </div>
+
+    <div id="addPointModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Enter Point Name</h2>
+            <input type="text" id="pointName" placeholder="Enter point name">
+            <button id="submitPoint">Add Point</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
     <script src="scripts.js"></script>
 </body>
