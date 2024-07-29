@@ -24,10 +24,10 @@ function addMarker(coordinate, name) {
     });
 
     marker.setStyle(new ol.style.Style({
-        image: new ol.style.Circle({
-            radius: 6,
-            fill: new ol.style.Fill({ color: 'red' }),
-            stroke: new ol.style.Stroke({ color: 'white', width: 2 })
+        image: new ol.style.Icon({
+            src: 'images/dedeedede.png', // Path to your marker icon
+            scale: 0.6,
+            anchor: [0.5,0.7]// Adjust scale if necessary
         })
     }));
 
