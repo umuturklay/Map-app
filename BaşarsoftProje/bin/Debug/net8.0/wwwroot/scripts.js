@@ -15,26 +15,46 @@ var map = new ol.Map({
 });
 
 var drawInteraction;
+var selectInteraction;
 var vectorSource = map.getLayers().item(1).getSource();
 
-function addMarker(coordinate, name) {
+function addMarker(coordinate, name, id) {
     var marker = new ol.Feature({
         geometry: new ol.geom.Point(coordinate),
-        name: name
+        name: name,
+        id: id
     });
 
     marker.setStyle(new ol.style.Style({
         image: new ol.style.Icon({
-            src: 'images/dedeedede.png', // Path to your marker icon
+            src: 'images/dedeedede.png',
             scale: 0.6,
-            anchor: [0.5,0.7]// Adjust scale if necessary
+            anchor: [0.5, 0.7]
         })
     }));
 
     vectorSource.addFeature(marker);
 }
 
+function showToast(message, type = 'info') {
+    Toastify({
+        text: message,
+        duration: 3000,
+        close: true,
+        gravity: "top",
+        position: "right",
+        backgroundColor: type === 'error' ? "linear-gradient(to right, #ff5f6d, #ffc371)" :
+            type === 'success' ? "linear-gradient(to right, #00b09b, #96c93d)" :
+                "linear-gradient(to right, #00b4db, #0083b0)",
+    }).showToast();
+}
+
+
 document.getElementById('addPointBtn').addEventListener('click', function () {
+    if (selectInteraction) {
+        map.removeInteraction(selectInteraction);
+    }
+
     if (drawInteraction) {
         map.removeInteraction(drawInteraction);
     }
@@ -90,13 +110,15 @@ document.getElementById('addPointBtn').addEventListener('click', function () {
                             })
                             .then(data => {
                                 console.log('Success:', data);
-                                addMarker(coordinate, name);
+                                addMarker(coordinate, name, data.id);
                                 panel.close();
                                 map.removeInteraction(drawInteraction);
+                                setupSelectInteraction();
+                                showToast('Point added successfully', 'success');
                             })
                             .catch(error => {
                                 console.error('Error:', error);
-                                alert('Failed to add point. Check console for details.');
+                                showToast('Failed to add point. Check console for details.', 'error');
                             });
                     } else {
                         alert('Please enter a name for the point.');
@@ -107,15 +129,176 @@ document.getElementById('addPointBtn').addEventListener('click', function () {
     });
 });
 
-document.getElementById('queryBtn').addEventListener('click', function () {
+function queryPoints() {
     fetch('https://localhost:7047/api/point')
         .then(response => response.json())
         .then(data => {
+            vectorSource.clear();
             data.forEach(point => {
-                addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name);
+                addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name, point.id);
             });
+            showToast('Points loaded succesfully', 'success');
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to load points. Check console for details.', 'error');
+        });
+}
+
+document.getElementById('queryBtn').addEventListener('click', queryPoints);
+
+function updatePoint(id, newX, newY, newName, feature, panel) {
+    fetch(`https://localhost:7047/api/point/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            x: newX,
+            y: newY,
+            name: newName
+        })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(text => {
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.log('Response is not JSON:', text);
+                data = { message: 'Update successful' };
+            }
+            console.log('Updated:', data);
+            feature.getGeometry().setCoordinates(ol.proj.fromLonLat([newX, newY]));
+            feature.set('name', newName);
+            if (panel) panel.close();
+            showToast('Point updated succesfully', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Failed to update point. Check console for details.');
+        });
+}
+
+function setupSelectInteraction() {
+    if (selectInteraction) {
+        map.removeInteraction(selectInteraction);
+    }
+
+    selectInteraction = new ol.interaction.Select({
+        layers: [map.getLayers().item(1)],
+        style: new ol.style.Style({
+            image: new ol.style.Icon({
+                src: 'images/dedeedede.png',
+                scale: 0.8,
+                anchor: [0.5, 1]
+            })
+        })
+    });
+
+    map.addInteraction(selectInteraction);
+
+    selectInteraction.on('select', function (event) {
+        var feature = event.selected[0];
+        if (feature) {
+            var coordinate = feature.getGeometry().getCoordinates();
+            var lonLat = ol.proj.toLonLat(coordinate);
+            var name = feature.get('name');
+            var id = feature.get('id');
+
+            jsPanel.create({
+                theme: 'primary',
+                headerTitle: 'Point Details',
+                position: 'center',
+                contentSize: '300 240',
+                content: `
+                    <form id="updatePointForm">
+                        <label for="x">X:</label>
+                        <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
+                        <label for="y">Y:</label>
+                        <input type="text" id="y" value="${lonLat[1].toFixed(6)}"><br><br>
+                        <label for="name">Name:</label>
+                        <input type="text" id="name" value="${name}" required><br><br>
+                        <button type="submit">Update</button>
+                        <button type="button" id="dragToUpdateBtn">Drag to Update</button>
+                        <button type="button" id="deleteBtn">Delete</button>
+                    </form>
+                `,
+                callback: function (panel) {
+                    document.getElementById('updatePointForm').addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        var newX = parseFloat(document.getElementById('x').value);
+                        var newY = parseFloat(document.getElementById('y').value);
+                        var newName = document.getElementById('name').value.trim();
+
+                        updatePoint(id, newX, newY, newName, feature, panel);
+                    });
+
+                    document.getElementById('dragToUpdateBtn').addEventListener('click', function () {
+                        panel.close();
+
+                        var translateInteraction = new ol.interaction.Translate({
+                            features: new ol.Collection([feature])
+                        });
+
+                        map.addInteraction(translateInteraction);
+
+                        translateInteraction.on('translateend', function (event) {
+                            var newCoordinates = event.features.item(0).getGeometry().getCoordinates();
+                            var newLonLat = ol.proj.toLonLat(newCoordinates);
+
+                            updatePoint(id, newLonLat[0], newLonLat[1], name, feature);
+                            map.removeInteraction(translateInteraction);
+                            setupSelectInteraction();
+                        });
+                    });
+
+                    document.getElementById('deleteBtn').addEventListener('click', function () {
+                        deletePoint(id, feature, panel);
+                    });
+                },
+                onclosed: function () {
+                    selectInteraction.getFeatures().clear();
+                    setupSelectInteraction();
+                }
+            });
+        }
+    });
+}
+
+
+function deletePoint(id, feature, panel) {
+    if (confirm('Are you sure you want to delete this point?')) {
+        fetch(`https://localhost:7047/api/point/${id}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(text => {
+                console.log('Deleted:', text);
+                vectorSource.removeFeature(feature);
+                panel.close();
+                showToast('Point deleted succesfully', 'success');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to delete point. Check console for details.');
+            });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    queryPoints();
+    setupSelectInteraction();
 });
 
 window.addEventListener('resize', function () {

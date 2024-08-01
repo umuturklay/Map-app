@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "nqJoNE4floqgnnZzkzKWptEeXfWHdUZyr91w4Zuty0U=",
+  "Hash": "Zu7Xn/CV6mW7SPQID0uOhBQ5KCYiK/9ZIwM7RV0a41I=",
   "Source": "GeolocationAPI",
   "BasePath": "_content/GeolocationAPI",
   "Mode": "Default",
@@ -17,12 +17,12 @@
   ],
   "Assets": [
     {
-      "Identity": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\wwwroot\\images\\2534268_gps_location_map_place_icon.png",
+      "Identity": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\wwwroot\\images\\dedeedede.png",
       "SourceId": "GeolocationAPI",
       "SourceType": "Discovered",
       "ContentRoot": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\wwwroot\\",
       "BasePath": "_content/GeolocationAPI",
-      "RelativePath": "images/2534268_gps_location_map_place_icon.png",
+      "RelativePath": "images/dedeedede.png",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Primary",
@@ -33,7 +33,7 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "PreserveNewest",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot\\images\\2534268_gps_location_map_place_icon.png"
+      "OriginalItemSpec": "wwwroot\\images\\dedeedede.png"
     },
     {
       "Identity": "C:\\Users\\sakay\\source\\repos\\BaşarsoftProje\\BaşarsoftProje\\wwwroot\\index.html",
