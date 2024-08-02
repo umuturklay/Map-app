@@ -3,6 +3,7 @@ html, body {
     padding: 0;
     height: 100%;
     width: 100%;
+    overflow: hidden;
 }
 
 #map {
@@ -25,3 +26,19 @@ button {
     padding: 5px 10px;
     cursor: pointer;
 }
+
+.point-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.point-item {
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+    .point-item button {
+        margin-right: 5px;
+    }

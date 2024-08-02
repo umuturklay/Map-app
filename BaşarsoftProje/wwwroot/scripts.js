@@ -41,7 +41,7 @@ function showToast(message, type = 'info') {
         text: message,
         duration: 3000,
         close: true,
-        gravity: "top",
+        gravity: "bottom",
         position: "right",
         backgroundColor: type === 'error' ? "linear-gradient(to right, #ff5f6d, #ffc371)" :
             type === 'success' ? "linear-gradient(to right, #00b09b, #96c93d)" :
@@ -137,7 +137,8 @@ function queryPoints() {
             data.forEach(point => {
                 addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name, point.id);
             });
-            showToast('Points loaded succesfully', 'success');
+            showPointList(data);
+            showToast('Points loaded successfully', 'success');
         })
         .catch(error => {
             console.error('Error:', error);
@@ -145,9 +146,98 @@ function queryPoints() {
         });
 }
 
-document.getElementById('queryBtn').addEventListener('click', queryPoints);
+function showPointList(points) {
+    // Eðer açýk bir panel varsa, onu kapat
+    if (currentPanel) {
+        currentPanel.close();
+    }
 
-function updatePoint(id, newX, newY, newName, feature, panel) {
+    let content = '<div class="point-list">';
+    points.forEach(point => {
+        content += `
+            <div class="point-item">
+                <strong>${point.name}</strong> (${point.x.toFixed(6)}, ${point.y.toFixed(6)})
+                <button onclick="viewPoint(${point.id})">View</button>
+                <button onclick="updatePoint(${point.id})">Update</button>
+                <button onclick="deletePoint(${point.id})">Delete</button>
+            </div>
+        `;
+    });
+    content += '</div>';
+
+    currentPanel = jsPanel.create({
+        theme: 'primary',
+        headerTitle: 'Point List',
+        position: 'center',
+        contentSize: '400 400',
+        content: content,
+        onclose: function () {
+            currentPanel = null;
+        }
+    });
+}
+
+function viewPoint(id) {
+    const feature = vectorSource.getFeatures().find(f => f.get('id') === id);
+    if (feature) {
+        const coordinate = feature.getGeometry().getCoordinates();
+        map.getView().animate({
+            center: coordinate,
+            zoom: 15,
+            duration: 1000
+        });
+        jsPanel.getPanels().forEach(panel => panel.close());
+    }
+}
+
+let currentPanel = null;
+
+function updatePoint(id) {
+    const feature = vectorSource.getFeatures().find(f => f.get('id') === id);
+    if (feature) {
+        const coordinate = feature.getGeometry().getCoordinates();
+        const lonLat = ol.proj.toLonLat(coordinate);
+        const name = feature.get('name');
+
+        // Eðer açýk bir panel varsa, onu kapat
+        if (currentPanel) {
+            currentPanel.close();
+        }
+
+        currentPanel = jsPanel.create({
+            theme: 'primary',
+            headerTitle: 'Update Point',
+            position: 'center',
+            contentSize: '300 240',
+            content: `
+                <form id="updatePointForm">
+                    <label for="x">X:</label>
+                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
+                    <label for="y">Y:</label>
+                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}"><br><br>
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" value="${name}" required><br><br>
+                    <button type="submit">Update</button>
+                </form>
+            `,
+            callback: function (panel) {
+                document.getElementById('updatePointForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var newX = parseFloat(document.getElementById('x').value);
+                    var newY = parseFloat(document.getElementById('y').value);
+                    var newName = document.getElementById('name').value.trim();
+
+                    updatePointData(id, newX, newY, newName, feature, panel);
+                });
+            },
+            onclose: function () {
+                currentPanel = null;
+            }
+        });
+    }
+}
+
+function updatePointData(id, newX, newY, newName, feature, panel) {
     fetch(`https://localhost:7047/api/point/${id}`, {
         method: 'PUT',
         headers: {
@@ -177,13 +267,43 @@ function updatePoint(id, newX, newY, newName, feature, panel) {
             feature.getGeometry().setCoordinates(ol.proj.fromLonLat([newX, newY]));
             feature.set('name', newName);
             if (panel) panel.close();
-            showToast('Point updated succesfully', 'success');
+            showToast('Point updated successfully', 'success');
+            queryPoints();
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Failed to update point. Check console for details.');
+            showToast('Failed to update point. Check console for details.', 'error');
         });
 }
+
+function deletePoint(id) {
+    if (confirm('Are you sure you want to delete this point?')) {
+        fetch(`https://localhost:7047/api/point/${id}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(text => {
+                console.log('Deleted:', text);
+                const feature = vectorSource.getFeatures().find(f => f.get('id') === id);
+                if (feature) {
+                    vectorSource.removeFeature(feature);
+                }
+                showToast('Point deleted successfully', 'success');
+                queryPoints();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to delete point. Check console for details.', 'error');
+            });
+    }
+}
+
+document.getElementById('queryBtn').addEventListener('click', queryPoints);
 
 function setupSelectInteraction() {
     if (selectInteraction) {
@@ -236,7 +356,7 @@ function setupSelectInteraction() {
                         var newY = parseFloat(document.getElementById('y').value);
                         var newName = document.getElementById('name').value.trim();
 
-                        updatePoint(id, newX, newY, newName, feature, panel);
+                        updatePointData(id, newX, newY, newName, feature, panel);
                     });
 
                     document.getElementById('dragToUpdateBtn').addEventListener('click', function () {
@@ -252,7 +372,7 @@ function setupSelectInteraction() {
                             var newCoordinates = event.features.item(0).getGeometry().getCoordinates();
                             var newLonLat = ol.proj.toLonLat(newCoordinates);
 
-                            updatePoint(id, newLonLat[0], newLonLat[1], name, feature);
+                            updatePointData(id, newLonLat[0], newLonLat[1], name, feature);
                             map.removeInteraction(translateInteraction);
                             setupSelectInteraction();
                         });
@@ -269,31 +389,6 @@ function setupSelectInteraction() {
             });
         }
     });
-}
-
-
-function deletePoint(id, feature, panel) {
-    if (confirm('Are you sure you want to delete this point?')) {
-        fetch(`https://localhost:7047/api/point/${id}`, {
-            method: 'DELETE'
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text();
-            })
-            .then(text => {
-                console.log('Deleted:', text);
-                vectorSource.removeFeature(feature);
-                panel.close();
-                showToast('Point deleted succesfully', 'success');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to delete point. Check console for details.');
-            });
-    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
