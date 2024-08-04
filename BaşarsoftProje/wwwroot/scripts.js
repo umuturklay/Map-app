@@ -49,7 +49,6 @@ function showToast(message, type = 'info') {
     }).showToast();
 }
 
-
 document.getElementById('addPointBtn').addEventListener('click', function () {
     if (selectInteraction) {
         map.removeInteraction(selectInteraction);
@@ -71,19 +70,21 @@ document.getElementById('addPointBtn').addEventListener('click', function () {
         var lonLat = ol.proj.toLonLat(coordinate);
 
         jsPanel.create({
-            theme: 'primary',
+            theme: 'light',
+            borderRadius: '6px',
             headerTitle: 'Add Point',
             position: 'center',
-            contentSize: '300 200',
+            contentSize: { width: () => Math.min(600, window.innerWidth * 0.9), height: () => Math.min(400, window.innerHeight * 0.8) },
+            animateIn: 'jsPanelFadeIn',
             content: `
-                <form id="pointForm">
-                    <label for="x">X:</label>
-                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}" readonly><br><br>
-                    <label for="y">Y:</label>
-                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}" readonly><br><br>
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" required><br><br>
-                    <button type="submit">Save</button>
+                <form id="pointForm" class="modern-form">
+                    <label for="x">X Coordinate:</label>
+                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}" readonly>
+                    <label for="y">Y Coordinate:</label>
+                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}" readonly>
+                    <label for="name">Point Name:</label>
+                    <input type="text" id="name" required>
+                    <button type="submit">Save Point</button>
                 </form>
             `,
             callback: function (panel) {
@@ -129,16 +130,20 @@ document.getElementById('addPointBtn').addEventListener('click', function () {
     });
 });
 
-function queryPoints() {
+function queryPoints(showPanel = false) {
     fetch('https://localhost:7047/api/point')
         .then(response => response.json())
         .then(data => {
-            vectorSource.clear();
-            data.forEach(point => {
-                addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name, point.id);
-            });
-            showPointList(data);
-            showToast('Points loaded successfully', 'success');
+            if (!showPanel) {
+                vectorSource.clear();
+                data.forEach(point => {
+                    addMarker(ol.proj.fromLonLat([point.x, point.y]), point.name, point.id);
+                });
+                showToast('Points loaded successfully', 'success');
+            } else {
+                showPointList(data);
+                showToast('Point list opened', 'success');
+            }
         })
         .catch(error => {
             console.error('Error:', error);
@@ -147,32 +152,42 @@ function queryPoints() {
 }
 
 function showPointList(points) {
-    // Eðer açýk bir panel varsa, onu kapat
     if (currentPanel) {
         currentPanel.close();
     }
 
-    let content = '<div class="point-list">';
-    points.forEach(point => {
-        content += `
-            <div class="point-item">
-                <strong>${point.name}</strong> (${point.x.toFixed(6)}, ${point.y.toFixed(6)})
-                <button onclick="viewPoint(${point.id})">View</button>
-                <button onclick="updatePoint(${point.id})">Update</button>
-                <button onclick="deletePoint(${point.id})">Delete</button>
-            </div>
-        `;
-    });
-    content += '</div>';
+    let content = `
+        <div class="point-list" style="display: flex; flex-direction: column; height: 100%; overflow-y: auto;">
+            ${points.map(point => `
+                <div class="point-item">
+                    <strong>${point.name}</strong>
+                    <br>
+                    Coordinates: (${point.x.toFixed(6)}, ${point.y.toFixed(6)})
+                    <br>
+                    <button onclick="viewPoint(${point.id})">View</button>
+                    <button onclick="updatePointFromList(${point.id})">Update</button>
+                    <button onclick="deletePoint(${point.id})">Delete</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
 
     currentPanel = jsPanel.create({
-        theme: 'primary',
+        theme: 'light',
+        borderRadius: '6px',
         headerTitle: 'Point List',
         position: 'center',
-        contentSize: '400 400',
+        contentSize: { width: () => Math.min(800, window.innerWidth * 0.9), height: () => Math.min(window.innerHeight * 0.9, 600) },
+        animateIn: 'jsPanelFadeIn',
         content: content,
         onclose: function () {
             currentPanel = null;
+        },
+        callback: function (panel) {
+            // Ensure the content fills the entire panel
+            panel.content.style.height = '100%';
+            panel.content.style.display = 'flex';
+            panel.content.style.flexDirection = 'column';
         }
     });
 }
@@ -192,32 +207,33 @@ function viewPoint(id) {
 
 let currentPanel = null;
 
-function updatePoint(id) {
+function updatePointFromList(id) {
     const feature = vectorSource.getFeatures().find(f => f.get('id') === id);
     if (feature) {
         const coordinate = feature.getGeometry().getCoordinates();
         const lonLat = ol.proj.toLonLat(coordinate);
         const name = feature.get('name');
 
-        // Eðer açýk bir panel varsa, onu kapat
         if (currentPanel) {
             currentPanel.close();
         }
 
         currentPanel = jsPanel.create({
-            theme: 'primary',
+            theme: 'light',
+            borderRadius: '6px',
             headerTitle: 'Update Point',
             position: 'center',
-            contentSize: '300 240',
+            contentSize: { width: () => Math.min(600, window.innerWidth * 0.9), height: () => Math.min(300, window.innerHeight * 0.6) },
+            animateIn: 'jsPanelFadeIn',
             content: `
-                <form id="updatePointForm">
-                    <label for="x">X:</label>
-                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
-                    <label for="y">Y:</label>
-                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}"><br><br>
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" value="${name}" required><br><br>
-                    <button type="submit">Update</button>
+                <form id="updatePointForm" class="modern-form">
+                    <label for="x">X Coordinate:</label>
+                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}">
+                    <label for="y">Y Coordinate:</label>
+                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}">
+                    <label for="name">Point Name:</label>
+                    <input type="text" id="name" value="${name}" required>
+                    <button type="submit">Update Point</button>
                 </form>
             `,
             callback: function (panel) {
@@ -228,6 +244,77 @@ function updatePoint(id) {
                     var newName = document.getElementById('name').value.trim();
 
                     updatePointData(id, newX, newY, newName, feature, panel);
+                });
+            },
+            onclose: function () {
+                currentPanel = null;
+            }
+        });
+    }
+}
+
+function updatePoint(id) {
+    const feature = vectorSource.getFeatures().find(f => f.get('id') === id);
+    if (feature) {
+        const coordinate = feature.getGeometry().getCoordinates();
+        const lonLat = ol.proj.toLonLat(coordinate);
+        const name = feature.get('name');
+
+        if (currentPanel) {
+            currentPanel.close();
+        }
+
+        currentPanel = jsPanel.create({
+            theme: 'light',
+            borderRadius: '6px',
+            headerTitle: 'Update Point',
+            position: 'center',
+            contentSize: { width: () => Math.min(600, window.innerWidth * 0.9), height: () => Math.min(400, window.innerHeight * 0.8) },
+            animateIn: 'jsPanelFadeIn',
+            content: `
+                <form id="updatePointForm" class="modern-form">
+                    <label for="x">X Coordinate:</label>
+                    <input type="text" id="x" value="${lonLat[0].toFixed(6)}">
+                    <label for="y">Y Coordinate:</label>
+                    <input type="text" id="y" value="${lonLat[1].toFixed(6)}">
+                    <label for="name">Point Name:</label>
+                    <input type="text" id="name" value="${name}" required>
+                    <button type="submit">Update Point</button>
+                    <button type="button" id="dragToUpdateBtn">Drag to Update</button>
+                    <button type="button" id="deleteBtn">Delete Point</button>
+                </form>
+            `,
+            callback: function (panel) {
+                document.getElementById('updatePointForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var newX = parseFloat(document.getElementById('x').value);
+                    var newY = parseFloat(document.getElementById('y').value);
+                    var newName = document.getElementById('name').value.trim();
+
+                    updatePointData(id, newX, newY, newName, feature, panel);
+                });
+
+                document.getElementById('dragToUpdateBtn').addEventListener('click', function () {
+                    panel.close();
+
+                    var translateInteraction = new ol.interaction.Translate({
+                        features: new ol.Collection([feature])
+                    });
+
+                    map.addInteraction(translateInteraction);
+
+                    translateInteraction.on('translateend', function (event) {
+                        var newCoordinates = event.features.item(0).getGeometry().getCoordinates();
+                        var newLonLat = ol.proj.toLonLat(newCoordinates);
+
+                        updatePointData(id, newLonLat[0], newLonLat[1], name, feature);
+                        map.removeInteraction(translateInteraction);
+                        setupSelectInteraction();
+                    });
+                });
+
+                document.getElementById('deleteBtn').addEventListener('click', function () {
+                    deletePoint(id, feature, panel);
                 });
             },
             onclose: function () {
@@ -268,7 +355,7 @@ function updatePointData(id, newX, newY, newName, feature, panel) {
             feature.set('name', newName);
             if (panel) panel.close();
             showToast('Point updated successfully', 'success');
-            queryPoints();
+            queryPoints(false);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -294,7 +381,7 @@ function deletePoint(id) {
                     vectorSource.removeFeature(feature);
                 }
                 showToast('Point deleted successfully', 'success');
-                queryPoints();
+                queryPoints(false);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -303,7 +390,9 @@ function deletePoint(id) {
     }
 }
 
-document.getElementById('queryBtn').addEventListener('click', queryPoints);
+document.getElementById('queryBtn').addEventListener('click', function () {
+    queryPoints(true);
+});
 
 function setupSelectInteraction() {
     if (selectInteraction) {
@@ -326,73 +415,13 @@ function setupSelectInteraction() {
     selectInteraction.on('select', function (event) {
         var feature = event.selected[0];
         if (feature) {
-            var coordinate = feature.getGeometry().getCoordinates();
-            var lonLat = ol.proj.toLonLat(coordinate);
-            var name = feature.get('name');
-            var id = feature.get('id');
-
-            jsPanel.create({
-                theme: 'primary',
-                headerTitle: 'Point Details',
-                position: 'center',
-                contentSize: '300 240',
-                content: `
-                    <form id="updatePointForm">
-                        <label for="x">X:</label>
-                        <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
-                        <label for="y">Y:</label>
-                        <input type="text" id="y" value="${lonLat[1].toFixed(6)}"><br><br>
-                        <label for="name">Name:</label>
-                        <input type="text" id="name" value="${name}" required><br><br>
-                        <button type="submit">Update</button>
-                        <button type="button" id="dragToUpdateBtn">Drag to Update</button>
-                        <button type="button" id="deleteBtn">Delete</button>
-                    </form>
-                `,
-                callback: function (panel) {
-                    document.getElementById('updatePointForm').addEventListener('submit', function (e) {
-                        e.preventDefault();
-                        var newX = parseFloat(document.getElementById('x').value);
-                        var newY = parseFloat(document.getElementById('y').value);
-                        var newName = document.getElementById('name').value.trim();
-
-                        updatePointData(id, newX, newY, newName, feature, panel);
-                    });
-
-                    document.getElementById('dragToUpdateBtn').addEventListener('click', function () {
-                        panel.close();
-
-                        var translateInteraction = new ol.interaction.Translate({
-                            features: new ol.Collection([feature])
-                        });
-
-                        map.addInteraction(translateInteraction);
-
-                        translateInteraction.on('translateend', function (event) {
-                            var newCoordinates = event.features.item(0).getGeometry().getCoordinates();
-                            var newLonLat = ol.proj.toLonLat(newCoordinates);
-
-                            updatePointData(id, newLonLat[0], newLonLat[1], name, feature);
-                            map.removeInteraction(translateInteraction);
-                            setupSelectInteraction();
-                        });
-                    });
-
-                    document.getElementById('deleteBtn').addEventListener('click', function () {
-                        deletePoint(id, feature, panel);
-                    });
-                },
-                onclosed: function () {
-                    selectInteraction.getFeatures().clear();
-                    setupSelectInteraction();
-                }
-            });
+            updatePoint(feature.get('id'));
         }
     });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    queryPoints();
+    queryPoints(false);
     setupSelectInteraction();
 });
 

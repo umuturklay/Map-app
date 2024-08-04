@@ -27,18 +27,80 @@ button {
     cursor: pointer;
 }
 
+.jsPanel {
+    font-family: 'Arial', sans-serif;
+}
+
+.jsPanel-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 40px); /* Subtracting padding */
+}
+
+.modern-form input[type="text"],
+.modern-form input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.modern-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.modern-form button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+    .modern-form button:hover {
+        background-color: #45a049;
+    }
+
 .point-list {
-    max-height: 300px;
+    flex: 1;
     overflow-y: auto;
+    margin: -20px; /* Negating the jsPanel-content padding */
+    padding: 20px;
 }
 
 .point-item {
+    background-color: #f9f9f9;
     margin-bottom: 10px;
-    padding: 5px;
-    border: 1px solid #ddd;
+    padding: 15px;
     border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
 }
+
+    .point-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
 
     .point-item button {
         margin-right: 5px;
+        padding: 5px 10px;
+        background-color: #008CBA;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: background-color 0.3s;
     }
+
+        .point-item button:hover {
+            background-color: #007B9A;
+        }

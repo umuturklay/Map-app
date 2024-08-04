@@ -41,7 +41,7 @@ function showToast(message, type = 'info') {
         text: message,
         duration: 3000,
         close: true,
-        gravity: "top",
+        gravity: "bottom",
         position: "right",
         backgroundColor: type === 'error' ? "linear-gradient(to right, #ff5f6d, #ffc371)" :
             type === 'success' ? "linear-gradient(to right, #00b09b, #96c93d)" :
@@ -147,6 +147,11 @@ function queryPoints() {
 }
 
 function showPointList(points) {
+    // Eðer açýk bir panel varsa, onu kapat
+    if (currentPanel) {
+        currentPanel.close();
+    }
+
     let content = '<div class="point-list">';
     points.forEach(point => {
         content += `
@@ -160,24 +165,16 @@ function showPointList(points) {
     });
     content += '</div>';
 
-    if (currentPanel) {
-        // Eðer mevcut bir panel varsa, içeriðini güncelle
-        currentPanel.setHeaderTitle('Point List');
-        currentPanel.content.innerHTML = content;
-        currentPanel.resize(400, 400);
-    } else {
-        // Eðer mevcut panel yoksa, yeni bir panel oluþtur
-        currentPanel = jsPanel.create({
-            theme: 'primary',
-            headerTitle: 'Point List',
-            position: 'center',
-            contentSize: '400 400',
-            content: content,
-            onclose: function () {
-                currentPanel = null;
-            }
-        });
-    }
+    currentPanel = jsPanel.create({
+        theme: 'primary',
+        headerTitle: 'Point List',
+        position: 'center',
+        contentSize: '400 400',
+        content: content,
+        onclose: function () {
+            currentPanel = null;
+        }
+    });
 }
 
 function viewPoint(id) {
@@ -202,10 +199,17 @@ function updatePoint(id) {
         const lonLat = ol.proj.toLonLat(coordinate);
         const name = feature.get('name');
 
+        // Eðer açýk bir panel varsa, onu kapat
         if (currentPanel) {
-            // Eðer mevcut bir panel varsa, içeriðini güncelle
-            currentPanel.setHeaderTitle('Update Point');
-            currentPanel.content.innerHTML = `
+            currentPanel.close();
+        }
+
+        currentPanel = jsPanel.create({
+            theme: 'primary',
+            headerTitle: 'Update Point',
+            position: 'center',
+            contentSize: '300 240',
+            content: `
                 <form id="updatePointForm">
                     <label for="x">X:</label>
                     <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
@@ -215,48 +219,23 @@ function updatePoint(id) {
                     <input type="text" id="name" value="${name}" required><br><br>
                     <button type="submit">Update</button>
                 </form>
-            `;
-            setupUpdateFormListener(id, feature, currentPanel);
-        } else {
-            // Eðer mevcut panel yoksa, yeni bir panel oluþtur
-            currentPanel = jsPanel.create({
-                theme: 'primary',
-                headerTitle: 'Update Point',
-                position: 'center',
-                contentSize: '300 240',
-                content: `
-                    <form id="updatePointForm">
-                        <label for="x">X:</label>
-                        <input type="text" id="x" value="${lonLat[0].toFixed(6)}"><br><br>
-                        <label for="y">Y:</label>
-                        <input type="text" id="y" value="${lonLat[1].toFixed(6)}"><br><br>
-                        <label for="name">Name:</label>
-                        <input type="text" id="name" value="${name}" required><br><br>
-                        <button type="submit">Update</button>
-                    </form>
-                `,
-                callback: function (panel) {
-                    setupUpdateFormListener(id, feature, panel);
-                },
-                onclose: function () {
-                    currentPanel = null;
-                }
-            });
-        }
+            `,
+            callback: function (panel) {
+                document.getElementById('updatePointForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    var newX = parseFloat(document.getElementById('x').value);
+                    var newY = parseFloat(document.getElementById('y').value);
+                    var newName = document.getElementById('name').value.trim();
+
+                    updatePointData(id, newX, newY, newName, feature, panel);
+                });
+            },
+            onclose: function () {
+                currentPanel = null;
+            }
+        });
     }
 }
-
-function setupUpdateFormListener(id, feature, panel) {
-    document.getElementById('updatePointForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var newX = parseFloat(document.getElementById('x').value);
-        var newY = parseFloat(document.getElementById('y').value);
-        var newName = document.getElementById('name').value.trim();
-
-        updatePointData(id, newX, newY, newName, feature, panel);
-    });
-}
-
 
 function updatePointData(id, newX, newY, newName, feature, panel) {
     fetch(`https://localhost:7047/api/point/${id}`, {
@@ -287,6 +266,7 @@ function updatePointData(id, newX, newY, newName, feature, panel) {
             console.log('Updated:', data);
             feature.getGeometry().setCoordinates(ol.proj.fromLonLat([newX, newY]));
             feature.set('name', newName);
+            if (panel) panel.close();
             showToast('Point updated successfully', 'success');
             queryPoints();
         })
